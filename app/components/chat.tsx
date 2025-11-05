@@ -2,6 +2,7 @@
 
 import type React from "react"
 import { useState, useRef, useEffect } from "react"
+import ReactMarkdown from "react-markdown"
 import { useChat } from "@/hooks/use-chat"
 import { useThread } from "@/hooks/use-thread"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -55,7 +56,6 @@ export default function Chat() {
             padding: "clamp(12px, 1.5vw, 16px) clamp(16px, 2vw, 24px)",
             display: "flex",
             alignItems: "center",
-            justifyContent: "space-between",
             gap: "16px",
           }}
         >
@@ -65,7 +65,7 @@ export default function Chat() {
             </h1>
             <p style={{ fontSize: "12px", color: "#ffffff", margin: "4px 0 0 0" }}>TAIM Ticket Assistant</p>
           </div>
-          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: "8px", alignItems: "center", marginLeft: "auto" }}>
             <button
               onClick={handleNewChat}
               disabled={isLoading}
@@ -111,15 +111,23 @@ export default function Chat() {
             </p>
           </div>
         ) : (
-          messages.map((message) => (
-            <div key={message.id} className={`message-group ${message.role === "user" ? "user" : ""}`}>
-              <div className={`bubble ${message.role}`}>
-                <p style={{ whiteSpace: "pre-wrap", margin: 0, fontFamily: '"Arial", sans-serif' }}>
-                  {message.content}
-                </p>
+          messages.map((message) => {
+            const isUser = message.role === "user"
+            const messageGroupStyle: React.CSSProperties = {
+              paddingLeft: isUser ? "5cm" : "0.5cm",
+              paddingRight: isUser ? "0.5cm" : "5cm",
+            }
+
+            return (
+              <div key={message.id} className={`message-group ${isUser ? "user" : ""}`} style={messageGroupStyle}>
+                <div className={`bubble ${message.role}`}>
+                  <div style={{ whiteSpace: "pre-wrap", fontFamily: '"Gotham", "Avenir LT Pro", "Arial", sans-serif' }}>
+                    <ReactMarkdown>{message.content}</ReactMarkdown>
+                  </div>
+                </div>
               </div>
-            </div>
-          ))
+            )
+          })
         )}
 
         {isLoading && messages.length > 0 && (

@@ -27,7 +27,7 @@ export function ThemeToggle() {
       title={`Current: ${theme} mode`}
       type="button"
     >
-      {theme === "dark" ? "Dark" : "Light"}
+      {theme === "dark" ? "Light" : "Dark"}
     </button>
   )
 }

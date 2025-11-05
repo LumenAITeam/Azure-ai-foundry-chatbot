@@ -87,14 +87,14 @@ export function useChat(): UseChatReturn {
               try {
                 const data = JSON.parse(line.slice(6))
                 if (data.token) {
-                  setMessages((prev) => {
-                    const updated = [...prev]
-                    const lastMsg = updated[updated.length - 1]
-                    if (lastMsg && lastMsg.role === "assistant") {
-                      lastMsg.content += data.token
-                    }
-                    return updated
-                  })
+                  setMessages((prev) =>
+                    prev.map((msg, index) => {
+                      if (index === prev.length - 1 && msg.role === "assistant") {
+                        return { ...msg, content: msg.content + data.token }
+                      }
+                      return msg
+                    }),
+                  )
                 }
               } catch {
                 // Skip malformed JSON
