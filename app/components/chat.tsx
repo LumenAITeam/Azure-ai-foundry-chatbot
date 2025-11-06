@@ -14,7 +14,7 @@ const QUICK_PROMPTS = [
   { label: "Get Help", text: "How do I submit a new ticket?" },
 ]
 
-// Memoized message component for better performance
+// Memoized message component with proper markdown rendering
 const MessageBubble = memo(({ message }: { message: any }) => {
   const isUser = message.role === "user"
   
@@ -22,16 +22,38 @@ const MessageBubble = memo(({ message }: { message: any }) => {
     <div className={`message-group ${isUser ? "user" : ""}`}>
       <div className={`bubble ${message.role}`}>
         <div className="bubble-content">
-          <ReactMarkdown
-            components={{
-              p: ({ children }) => <p>{children}</p>,
-              ul: ({ children }) => <ul>{children}</ul>,
-              li: ({ children }) => <li>{children}</li>,
-              strong: ({ children }) => <strong>{children}</strong>,
-            }}
-          >
-            {message.content}
-          </ReactMarkdown>
+          {isUser ? (
+            <p>{message.content}</p>
+          ) : (
+            <ReactMarkdown
+              components={{
+                p: ({ children }) => <p className="markdown-p">{children}</p>,
+                h1: ({ children }) => <h1 className="markdown-h1">{children}</h1>,
+                h2: ({ children }) => <h2 className="markdown-h2">{children}</h2>,
+                h3: ({ children }) => <h3 className="markdown-h3">{children}</h3>,
+                h4: ({ children }) => <h4 className="markdown-h4">{children}</h4>,
+                h5: ({ children }) => <h5 className="markdown-h5">{children}</h5>,
+                h6: ({ children }) => <h6 className="markdown-h6">{children}</h6>,
+                ul: ({ children }) => <ul className="markdown-ul">{children}</ul>,
+                ol: ({ children }) => <ol className="markdown-ol">{children}</ol>,
+                li: ({ children }) => <li className="markdown-li">{children}</li>,
+                strong: ({ children }) => <strong className="markdown-strong">{children}</strong>,
+                em: ({ children }) => <em className="markdown-em">{children}</em>,
+                code: ({ children }) => <code className="markdown-code">{children}</code>,
+                pre: ({ children }) => <pre className="markdown-pre">{children}</pre>,
+                blockquote: ({ children }) => <blockquote className="markdown-blockquote">{children}</blockquote>,
+                hr: () => <hr className="markdown-hr" />,
+                table: ({ children }) => <table className="markdown-table">{children}</table>,
+                thead: ({ children }) => <thead>{children}</thead>,
+                tbody: ({ children }) => <tbody>{children}</tbody>,
+                tr: ({ children }) => <tr>{children}</tr>,
+                th: ({ children }) => <th>{children}</th>,
+                td: ({ children }) => <td>{children}</td>,
+              }}
+            >
+              {message.content}
+            </ReactMarkdown>
+          )}
         </div>
       </div>
     </div>
@@ -56,7 +78,7 @@ export default function Chat() {
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto"
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 180)}px`
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 160)}px`
     }
   }, [inputValue])
 
@@ -131,7 +153,7 @@ export default function Chat() {
           messages.map((message) => <MessageBubble key={message.id} message={message} />)
         )}
 
-        {isLoading && messages.length > 0 && (
+        {isLoading && (
           <div className="message-group">
             <div className="bubble assistant">
               <div className="loading-indicator">

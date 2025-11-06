@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Step 1: Add message
+    // Step 1: Add message (WITHOUT system prompt - it's set in Azure AI Foundry)
     try {
       await addMessage(threadId, content.trim())
     } catch (err) {
@@ -47,22 +47,16 @@ export async function POST(request: NextRequest) {
     while (Date.now() - startTime < maxWaitTime) {
       try {
         attempts++
-        // Simply await the poll - it should handle its own logic
         await pollRunCompletion(threadId, runId)
-        
-        // If we reach here, the run is complete
         break
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : String(err)
         
-        // Check if it's a timeout/incomplete error (expected during polling)
         if (errorMsg.includes("running") || errorMsg.includes("pending") || errorMsg.includes("queued")) {
-          // Still running, continue polling
           await sleep(500)
           continue
         }
         
-        // If it's a real error, log but continue trying
         if (attempts % 10 === 0) {
           console.log(`Poll attempt ${attempts}, will retry...`)
         }
@@ -148,7 +142,6 @@ export async function POST(request: NextRequest) {
     const errorMessage = error instanceof Error ? error.message : "Unknown server error"
     console.error("[Stream API Error]", errorMessage)
 
-    // Return proper error response
     return new Response(
       `data: ${JSON.stringify({ error: errorMessage })}\n\n`,
       {
