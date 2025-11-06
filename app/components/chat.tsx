@@ -1,11 +1,12 @@
 "use client"
 
 import type React from "react"
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, memo } from "react"
 import ReactMarkdown from "react-markdown"
 import { useChat } from "@/hooks/use-chat"
 import { useThread } from "@/hooks/use-thread"
 import { ThemeToggle } from "@/components/theme-toggle"
+import Image from "next/image"
 
 const QUICK_PROMPTS = [
   { label: "FAQ", text: "What common ticket issues can you help with?" },
@@ -13,23 +14,59 @@ const QUICK_PROMPTS = [
   { label: "Get Help", text: "How do I submit a new ticket?" },
 ]
 
+// Memoized message component for better performance
+const MessageBubble = memo(({ message }: { message: any }) => {
+  const isUser = message.role === "user"
+  
+  return (
+    <div className={`message-group ${isUser ? "user" : ""}`}>
+      <div className={`bubble ${message.role}`}>
+        <div className="bubble-content">
+          <ReactMarkdown
+            components={{
+              p: ({ children }) => <p>{children}</p>,
+              ul: ({ children }) => <ul>{children}</ul>,
+              li: ({ children }) => <li>{children}</li>,
+              strong: ({ children }) => <strong>{children}</strong>,
+            }}
+          >
+            {message.content}
+          </ReactMarkdown>
+        </div>
+      </div>
+    </div>
+  )
+})
+
+MessageBubble.displayName = "MessageBubble"
+
 export default function Chat() {
   const { threadId, updateActivity, createNewThread } = useThread()
   const { messages, isLoading, error, sendMessage, clearError, clearMessages } = useChat()
   const [inputValue, setInputValue] = useState("")
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
+  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto"
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 180)}px`
+    }
+  }, [inputValue])
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!inputValue.trim() || !threadId) return
+    if (!inputValue.trim() || !threadId || isLoading) return
 
     clearError()
     updateActivity()
-    await sendMessage(inputValue, threadId)
+    await sendMessage(inputValue.trim(), threadId)
     setInputValue("")
   }
 
@@ -46,88 +83,52 @@ export default function Chat() {
     await createNewThread()
   }
 
+  const handleQuickPrompt = (text: string) => {
+    setInputValue(text)
+    textareaRef.current?.focus()
+  }
+
   return (
     <div className="chat-container">
       <header className="header">
-        <div
-          style={{
-            maxWidth: "880px",
-            margin: "0 auto",
-            padding: "clamp(12px, 1.5vw, 16px) clamp(16px, 2vw, 24px)",
-            display: "flex",
-            alignItems: "center",
-            gap: "16px",
-          }}
-        >
-          <div>
-            <h1 style={{ fontSize: "clamp(18px, 1.5vw, 24px)", fontWeight: 600, color: "#ffffff", margin: 0 }}>
-              Lumen Technologies
-            </h1>
-            <p style={{ fontSize: "12px", color: "#ffffff", margin: "4px 0 0 0" }}>TAIM Ticket Assistant</p>
+        <div className="header-inner">
+          <div className="header-logo">
+            <Image
+              src="https://ironshieldnetworks.com/wp-content/uploads/2021/12/white-Lumen-logo.png"
+              alt="Lumen Technologies"
+              width={100}
+              height={28}
+              priority
+              style={{ objectFit: "contain" }}
+            />
+            <div className="header-subtitle">TAIM Ticket Assistant</div>
           </div>
-          <div style={{ display: "flex", gap: "8px", alignItems: "center", marginLeft: "auto" }}>
+          <div className="header-actions">
+            <ThemeToggle />
             <button
               onClick={handleNewChat}
               disabled={isLoading}
               className="btn secondary"
               aria-label="Start a new chat conversation"
-              style={{
-                backgroundColor: "#0f7570",
-                color: "#ffffff",
-                border: "2px solid #ffffff",
-                padding: "8px 16px",
-                borderRadius: "6px",
-                cursor: isLoading ? "not-allowed" : "pointer",
-                fontSize: "14px",
-                fontWeight: 500,
-              }}
             >
               New Chat
             </button>
-            <ThemeToggle />
           </div>
         </div>
       </header>
 
       <main className="transcript">
         {!threadId ? (
-          <div style={{ textAlign: "center", padding: "clamp(16px, 5vw, 32px)", color: "var(--color-text-muted)" }}>
-            <p style={{ fontSize: "14px" }}>Initializing chat...</p>
+          <div className="empty-state">
+            <p className="empty-state-text">Initializing chat...</p>
           </div>
         ) : messages.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "clamp(16px, 5vw, 32px)" }}>
-            <p
-              style={{
-                fontSize: "clamp(16px, 1.2vw, 18px)",
-                fontWeight: 500,
-                color: "var(--color-text)",
-                margin: "0 0 8px 0",
-              }}
-            >
-              How can we help?
-            </p>
-            <p style={{ fontSize: "14px", color: "var(--color-text-muted)", margin: 0 }}>
-              Ask about your tickets or technical issues
-            </p>
+          <div className="welcome-state">
+            <p className="welcome-title">How can we help?</p>
+            <p className="welcome-subtitle">Ask about your tickets or technical issues</p>
           </div>
         ) : (
-          messages.map((message) => {
-            const isUser = message.role === "user"
-            const messageGroupStyle: React.CSSProperties = {
-              paddingLeft: isUser ? "5cm" : "0.5cm",
-              paddingRight: isUser ? "0.5cm" : "5cm",
-            }
-
-            return (
-              <div key={message.id} className={`message-group ${isUser ? "user" : ""}`} style={messageGroupStyle}>
-                <div className={`bubble ${message.role}`}>
-                  <div style={{ whiteSpace: "pre-wrap", fontFamily: '"Gotham", "Avenir LT Pro", "Arial", sans-serif' }}>
-                    <ReactMarkdown>{message.content}</ReactMarkdown>
-                  </div>
-                </div>
-              </div>
-            )
-          })
+          messages.map((message) => <MessageBubble key={message.id} message={message} />)
         )}
 
         {isLoading && messages.length > 0 && (
@@ -135,7 +136,7 @@ export default function Chat() {
             <div className="bubble assistant">
               <div className="loading-indicator">
                 <span>Thinking</span>
-                <span style={{ animation: "fadeInOut 1.5s ease-in-out infinite" }}>...</span>
+                <span className="loading-dots">...</span>
               </div>
             </div>
           </div>
@@ -146,29 +147,18 @@ export default function Chat() {
 
       <div className="composer">
         {error && (
-          <div
-            style={{
-              maxWidth: "880px",
-              margin: "0 auto 12px",
-              width: "100%",
-              padding: "12px 14px",
-              background: "rgba(239, 68, 68, 0.1)",
-              border: "1px solid rgba(239, 68, 68, 0.3)",
-              borderRadius: "var(--radius-md)",
-              color: "var(--color-text)",
-            }}
-          >
-            <p style={{ fontSize: "13px", margin: 0 }}>{error}</p>
+          <div className="error-banner">
+            <p className="error-text">{error}</p>
           </div>
         )}
 
-        <div style={{ maxWidth: "880px", margin: "0 auto", width: "100%" }}>
+        <div className="composer-inner">
           {threadId && messages.length > 0 && !isLoading && (
             <div className="chips">
               {QUICK_PROMPTS.map((prompt) => (
                 <button
                   key={prompt.label}
-                  onClick={() => setInputValue(prompt.text)}
+                  onClick={() => handleQuickPrompt(prompt.text)}
                   className="chip"
                   aria-label={`Suggestion: ${prompt.label}`}
                 >
@@ -180,6 +170,7 @@ export default function Chat() {
 
           <form onSubmit={handleSendMessage} className="composer-form">
             <textarea
+              ref={textareaRef}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -199,7 +190,7 @@ export default function Chat() {
             </button>
           </form>
 
-          <p style={{ fontSize: "11px", color: "var(--color-text-muted)", margin: "8px 0 0 0", textAlign: "center" }}>
+          <p className="disclaimer">
             AI Generated. Please be cautious, sometimes may be incorrect. Contact Cloud Team for further assistance.
           </p>
         </div>

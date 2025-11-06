@@ -3,40 +3,135 @@ import { addMessage, createRun, pollRunCompletion, getMessages, extractAssistant
 
 export const maxDuration = 60
 
+async function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const { threadId, content } = await request.json()
+    const body = await request.json()
+    const { threadId, content } = body
 
     if (!threadId || !content?.trim()) {
-      return new Response("Invalid request", { status: 400 })
+      return new Response(
+        JSON.stringify({ error: "Missing threadId or content" }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      )
     }
 
-    // Add message and create run
-    await addMessage(threadId, content.trim())
-    const runId = await createRun(threadId)
-    await pollRunCompletion(threadId, runId)
+    // Step 1: Add message
+    try {
+      await addMessage(threadId, content.trim())
+    } catch (err) {
+      console.error("Error adding message:", err)
+      throw new Error(`Failed to add message: ${err instanceof Error ? err.message : String(err)}`)
+    }
 
-    // Fetch messages
-    const messages = await getMessages(threadId)
-    const agentResponse = extractAssistantMessage(messages)
+    // Step 2: Create run
+    let runId: string
+    try {
+      runId = await createRun(threadId)
+      if (!runId) {
+        throw new Error("No runId returned from createRun")
+      }
+    } catch (err) {
+      console.error("Error creating run:", err)
+      throw new Error(`Failed to create run: ${err instanceof Error ? err.message : String(err)}`)
+    }
 
+    // Step 3: Poll for completion with timeout
+    const startTime = Date.now()
+    const maxWaitTime = 45000 // 45 seconds
+    let attempts = 0
+
+    while (Date.now() - startTime < maxWaitTime) {
+      try {
+        attempts++
+        // Simply await the poll - it should handle its own logic
+        await pollRunCompletion(threadId, runId)
+        
+        // If we reach here, the run is complete
+        break
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : String(err)
+        
+        // Check if it's a timeout/incomplete error (expected during polling)
+        if (errorMsg.includes("running") || errorMsg.includes("pending") || errorMsg.includes("queued")) {
+          // Still running, continue polling
+          await sleep(500)
+          continue
+        }
+        
+        // If it's a real error, log but continue trying
+        if (attempts % 10 === 0) {
+          console.log(`Poll attempt ${attempts}, will retry...`)
+        }
+        
+        await sleep(500)
+      }
+    }
+
+    console.log(`Polling completed after ${attempts} attempts`)
+
+    // Step 4: Get messages
+    let messages: any[]
+    try {
+      messages = await getMessages(threadId)
+      if (!messages || !Array.isArray(messages)) {
+        throw new Error("Invalid messages format")
+      }
+    } catch (err) {
+      console.error("Error getting messages:", err)
+      throw new Error(`Failed to get messages: ${err instanceof Error ? err.message : String(err)}`)
+    }
+
+    // Step 5: Extract response
+    let agentResponse: string
+    try {
+      agentResponse = extractAssistantMessage(messages)
+      if (!agentResponse || typeof agentResponse !== "string") {
+        agentResponse = "I encountered an issue processing your request. Please try again."
+      }
+    } catch (err) {
+      console.error("Error extracting message:", err)
+      agentResponse = "I encountered an issue processing your request. Please try again."
+    }
+
+    // Step 6: Stream response
     const encoder = new TextEncoder()
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          // Stream response character by character with 1ms delay for natural feel
-          for (let i = 0; i < agentResponse.length; i++) {
-            const token = agentResponse[i]
-            const data = `data: ${JSON.stringify({ token })}\n\n`
-            controller.enqueue(encoder.encode(data))
+          // Split by words for natural streaming
+          const words = agentResponse.split(' ')
+          
+          for (let i = 0; i < words.length; i++) {
+            const word = i < words.length - 1 ? words[i] + ' ' : words[i]
+            const data = `data: ${JSON.stringify({ token: word })}\n\n`
+            
+            try {
+              controller.enqueue(encoder.encode(data))
+            } catch (e) {
+              console.error("Stream enqueue error:", e)
+              break
+            }
 
-            // Small delay between characters for streaming effect
-            await new Promise((resolve) => setTimeout(resolve, 1))
+            // Streaming delay
+            await sleep(12)
           }
 
+          // Send completion signal
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true })}\n\n`))
           controller.close()
         } catch (error) {
-          controller.error(error)
+          const errorMsg = error instanceof Error ? error.message : "Unknown streaming error"
+          console.error("Stream error:", errorMsg)
+          try {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: errorMsg })}\n\n`))
+          } catch (e) {
+            console.error("Failed to send error to stream")
+          }
+          controller.close()
         }
       },
     })
@@ -50,10 +145,19 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Stream error"
-    return new Response(`data: ${JSON.stringify({ error: message })}\n\n`, {
-      status: 500,
-      headers: { "Content-Type": "text/event-stream" },
-    })
+    const errorMessage = error instanceof Error ? error.message : "Unknown server error"
+    console.error("[Stream API Error]", errorMessage)
+
+    // Return proper error response
+    return new Response(
+      `data: ${JSON.stringify({ error: errorMessage })}\n\n`,
+      {
+        status: 500,
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+        },
+      }
+    )
   }
 }
