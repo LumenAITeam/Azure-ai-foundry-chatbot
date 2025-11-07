@@ -147,7 +147,7 @@ export default function Chat() {
         ) : messages.length === 0 ? (
           <div className="welcome-state">
             <p className="welcome-title">How can we help?</p>
-            <p className="welcome-subtitle">Ask about your tickets or technical issues</p>
+            <p className="welcome-subtitle">Ask about your TAiM tickets</p>
           </div>
         ) : (
           messages.map((message) => <MessageBubble key={message.id} message={message} />)
