@@ -2,25 +2,44 @@
 
 import { useState, useEffect, useCallback, useRef } from "react"
 
-const IDLE_TIMEOUT = 5 * 60 * 1000 // 5 minutes
+const IDLE_TIMEOUT = 10 * 60 * 1000 // 10 minutes
 
 export function useThread() {
   const [threadId, setThreadId] = useState<string | null>(null)
+  const [isInitializing, setIsInitializing] = useState(false)
   const lastActivityRef = useRef<number>(Date.now())
   const idleTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const initInProgressRef = useRef(false)
 
-  // Create new thread on mount
+  // Create thread on mount
   useEffect(() => {
     const initThread = async () => {
+      if (initInProgressRef.current || threadId) return
+
+      initInProgressRef.current = true
+      setIsInitializing(true)
+
       try {
-        const response = await fetch("/api/threads", { method: "POST" })
+        const response = await fetch("/api/threads", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        })
+
+        if (!response.ok) throw new Error("Failed to create thread")
+
         const data = await response.json()
-        if (data.success) {
+        if (data.success && data.threadId) {
           setThreadId(data.threadId)
           lastActivityRef.current = Date.now()
+          console.log(`[Thread] Initialized: ${data.threadId}`)
+        } else {
+          throw new Error(data.error || "No threadId in response")
         }
       } catch (err) {
-        // Silent fail - user will see "Initializing chat..." message
+        console.error("[Thread] Initialization error:", err)
+      } finally {
+        setIsInitializing(false)
+        initInProgressRef.current = false
       }
     }
 
@@ -34,11 +53,12 @@ export function useThread() {
     const checkIdle = () => {
       const elapsed = Date.now() - lastActivityRef.current
       if (elapsed > IDLE_TIMEOUT) {
+        console.log(`[Thread] Idle timeout for ${threadId}`)
         deleteCurrentThread()
       }
     }
 
-    idleTimerRef.current = setInterval(checkIdle, 30000) // Check every 30 seconds
+    idleTimerRef.current = setInterval(checkIdle, 60000)
 
     return () => {
       if (idleTimerRef.current) clearInterval(idleTimerRef.current)
@@ -51,40 +71,68 @@ export function useThread() {
 
   const deleteCurrentThread = useCallback(async () => {
     if (!threadId) return
+
     try {
-      await fetch("/api/chats", {
+      console.log(`[Thread] Deleting: ${threadId}`)
+      const response = await fetch("/api/threads", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ threadId }),
       })
+
+      if (!response.ok) {
+        console.warn(`[Thread] Delete failed: ${response.status}`)
+      }
     } catch (err) {
-      // Silent fail
+      console.error("[Thread] Deletion error:", err)
     }
+
     setThreadId(null)
   }, [threadId])
 
   const createNewThread = useCallback(async () => {
-    // Delete old thread if exists
     if (threadId) {
       await deleteCurrentThread()
     }
 
+    setIsInitializing(true)
     try {
-      const response = await fetch("/api/threads", { method: "POST" })
+      const response = await fetch("/api/threads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      })
+
+      if (!response.ok) throw new Error("Failed to create thread")
+
       const data = await response.json()
-      if (data.success) {
+      if (data.success && data.threadId) {
         setThreadId(data.threadId)
         lastActivityRef.current = Date.now()
+        console.log(`[Thread] New thread created: ${data.threadId}`)
+      } else {
+        throw new Error(data.error || "No threadId returned")
       }
     } catch (err) {
-      // Silent fail
+      console.error("[Thread] New thread creation error:", err)
+    } finally {
+      setIsInitializing(false)
     }
   }, [threadId, deleteCurrentThread])
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (idleTimerRef.current) {
+        clearInterval(idleTimerRef.current)
+      }
+    }
+  }, [])
 
   return {
     threadId,
     updateActivity,
     createNewThread,
     deleteCurrentThread,
+    isInitializing,
   }
 }

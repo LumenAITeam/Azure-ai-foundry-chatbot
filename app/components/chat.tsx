@@ -1,25 +1,24 @@
 "use client"
 
 import type React from "react"
-import { useState, useRef, useEffect, memo } from "react"
+import { useState, useRef, useEffect, memo, useCallback } from "react"
 import ReactMarkdown from "react-markdown"
 import { useChat } from "@/hooks/use-chat"
 import { useThread } from "@/hooks/use-thread"
 import { ThemeToggle } from "@/components/theme-toggle"
 import Image from "next/image"
 
-const QUICK_PROMPTS = [
+const QUICKPROMPTS = [
   { label: "FAQ", text: "What common ticket issues can you help with?" },
   { label: "View Status", text: "What is the current status of my tickets?" },
   { label: "Get Help", text: "How do I submit a new ticket?" },
 ]
 
-// Memoized message component with proper markdown rendering
 const MessageBubble = memo(({ message }: { message: any }) => {
   const isUser = message.role === "user"
-  
+
   return (
-    <div className={`message-group ${isUser ? "user" : ""}`}>
+    <div className={`message-group ${isUser ? "user" : "assistant"}`}>
       <div className={`bubble ${message.role}`}>
         <div className="bubble-content">
           {isUser ? (
@@ -27,28 +26,23 @@ const MessageBubble = memo(({ message }: { message: any }) => {
           ) : (
             <ReactMarkdown
               components={{
-                p: ({ children }) => <p className="markdown-p">{children}</p>,
                 h1: ({ children }) => <h1 className="markdown-h1">{children}</h1>,
                 h2: ({ children }) => <h2 className="markdown-h2">{children}</h2>,
                 h3: ({ children }) => <h3 className="markdown-h3">{children}</h3>,
-                h4: ({ children }) => <h4 className="markdown-h4">{children}</h4>,
-                h5: ({ children }) => <h5 className="markdown-h5">{children}</h5>,
-                h6: ({ children }) => <h6 className="markdown-h6">{children}</h6>,
+                p: ({ children }) => <p className="markdown-p">{children}</p>,
+                strong: ({ children }) => <strong className="markdown-strong">{children}</strong>,
+                em: ({ children }) => <em className="markdown-em">{children}</em>,
                 ul: ({ children }) => <ul className="markdown-ul">{children}</ul>,
                 ol: ({ children }) => <ol className="markdown-ol">{children}</ol>,
                 li: ({ children }) => <li className="markdown-li">{children}</li>,
-                strong: ({ children }) => <strong className="markdown-strong">{children}</strong>,
-                em: ({ children }) => <em className="markdown-em">{children}</em>,
                 code: ({ children }) => <code className="markdown-code">{children}</code>,
                 pre: ({ children }) => <pre className="markdown-pre">{children}</pre>,
                 blockquote: ({ children }) => <blockquote className="markdown-blockquote">{children}</blockquote>,
-                hr: () => <hr className="markdown-hr" />,
-                table: ({ children }) => <table className="markdown-table">{children}</table>,
-                thead: ({ children }) => <thead>{children}</thead>,
-                tbody: ({ children }) => <tbody>{children}</tbody>,
-                tr: ({ children }) => <tr>{children}</tr>,
-                th: ({ children }) => <th>{children}</th>,
-                td: ({ children }) => <td>{children}</td>,
+                a: ({ href, children }) => (
+                  <a href={href} target="_blank" rel="noopener noreferrer" className="markdown-link">
+                    {children}
+                  </a>
+                ),
               }}
             >
               {message.content}
@@ -63,13 +57,14 @@ const MessageBubble = memo(({ message }: { message: any }) => {
 MessageBubble.displayName = "MessageBubble"
 
 export default function Chat() {
-  const { threadId, updateActivity, createNewThread } = useThread()
+  const { threadId, updateActivity, createNewThread, isInitializing } = useThread()
   const { messages, isLoading, error, sendMessage, clearError, clearMessages } = useChat()
+
   const [inputValue, setInputValue] = useState("")
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // Auto-scroll to bottom when new messages arrive
+  // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
@@ -82,15 +77,22 @@ export default function Chat() {
     }
   }, [inputValue])
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!inputValue.trim() || !threadId || isLoading) return
+  const handleSendMessage = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault()
+      if (!inputValue.trim() || !threadId || isLoading) return
 
-    clearError()
-    updateActivity()
-    await sendMessage(inputValue.trim(), threadId)
-    setInputValue("")
-  }
+      clearError()
+      updateActivity()
+      await sendMessage(inputValue.trim(), threadId)
+      setInputValue("")
+
+      if (textareaRef.current) {
+        textareaRef.current.style.height = "auto"
+      }
+    },
+    [inputValue, threadId, isLoading, sendMessage, clearError, updateActivity]
+  )
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -99,15 +101,16 @@ export default function Chat() {
     }
   }
 
-  const handleNewChat = async () => {
+  const handleNewChat = useCallback(async () => {
     clearError()
     clearMessages()
     await createNewThread()
-  }
+  }, [clearError, clearMessages, createNewThread])
 
   const handleQuickPrompt = (text: string) => {
     setInputValue(text)
     textareaRef.current?.focus()
+    updateActivity()
   }
 
   return (
@@ -125,11 +128,12 @@ export default function Chat() {
             />
             <div className="header-subtitle">TAIM Ticket Assistant</div>
           </div>
+
           <div className="header-actions">
             <ThemeToggle />
             <button
               onClick={handleNewChat}
-              disabled={isLoading}
+              disabled={isLoading || isInitializing}
               className="btn secondary"
               aria-label="Start a new chat conversation"
             >
@@ -140,18 +144,22 @@ export default function Chat() {
       </header>
 
       <main className="transcript">
-        {!threadId ? (
+        {!threadId && (
           <div className="empty-state">
             <p className="empty-state-text">Initializing chat...</p>
           </div>
-        ) : messages.length === 0 ? (
+        )}
+
+        {threadId && messages.length === 0 && !isLoading && (
           <div className="welcome-state">
             <p className="welcome-title">How can we help?</p>
-            <p className="welcome-subtitle">Ask about your TAiM tickets</p>
+            <p className="welcome-subtitle">Ask about your TAIM tickets</p>
           </div>
-        ) : (
-          messages.map((message) => <MessageBubble key={message.id} message={message} />)
         )}
+
+        {messages.map((message) => (
+          <MessageBubble key={message.id} message={message} />
+        ))}
 
         {isLoading && (
           <div className="message-group">
@@ -171,13 +179,20 @@ export default function Chat() {
         {error && (
           <div className="error-banner">
             <p className="error-text">{error}</p>
+            <button
+              onClick={clearError}
+              className="error-close"
+              aria-label="Dismiss error"
+            >
+              ✕
+            </button>
           </div>
         )}
 
         <div className="composer-inner">
           {threadId && messages.length > 0 && !isLoading && (
             <div className="chips">
-              {QUICK_PROMPTS.map((prompt) => (
+              {QUICKPROMPTS.map((prompt) => (
                 <button
                   key={prompt.label}
                   onClick={() => handleQuickPrompt(prompt.text)}
@@ -201,6 +216,7 @@ export default function Chat() {
               rows={1}
               className="composer-textarea"
               aria-label="Message input"
+              maxLength={4000}
             />
             <button
               type="submit"
