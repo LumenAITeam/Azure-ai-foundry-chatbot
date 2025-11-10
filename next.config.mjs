@@ -7,14 +7,10 @@ const nextConfig = {
     unoptimized: true,
   },
   reactStrictMode: true,
-  swcMinify: true,
   compress: true,
   poweredByHeader: false,
-  
-  // Azure App Service specific - CRITICAL!
   output: 'standalone',
   
-  // API routes configuration
   async headers() {
     return [
       {

@@ -5,9 +5,9 @@ const API_VERSION = process.env.AZURE_API_VERSION || "2025-05-01"
 const AGENT_ID = process.env.AZURE_AGENT_ID
 const PROJECT_NAME = "IPCenter-Ticket-Bot"
 
-if (!PROJECT_ENDPOINT || !AGENT_ID) {
-  throw new Error("AZURE_PROJECT_ENDPOINT and AZURE_AGENT_ID required")
-}
+// if (!PROJECT_ENDPOINT || !AGENT_ID) {
+//   throw new Error("AZURE_PROJECT_ENDPOINT and AZURE_AGENT_ID required")
+// }
 
 // ✅ FIX 1: Add retry logic for network failures
 async function fetchWithRetry(
@@ -193,7 +193,7 @@ export async function pollRunCompletion(
   threadId: string,
   runId: string,
   maxAttempts: number = 90,
-  delayMs: number = 500
+  delayMs: number = 200
 ): Promise<void> {
   for (let i = 0; i < maxAttempts; i++) {
     try {
