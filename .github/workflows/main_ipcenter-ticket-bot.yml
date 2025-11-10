@@ -13,7 +13,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read #This is required for actions/checkout
+      contents: read
 
     steps:
       - uses: actions/checkout@v4
@@ -33,7 +33,16 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: .
+          path: |
+            .next
+            node_modules
+            public
+            package.json
+            next.config.mjs
+            .npmrc
+            .deployment
+            deploy.sh
+            web.config
 
   deploy:
     runs-on: ubuntu-latest
@@ -53,4 +62,3 @@ jobs:
           slot-name: 'Production'
           package: .
           publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE }}
-
