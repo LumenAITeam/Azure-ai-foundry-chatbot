@@ -165,11 +165,22 @@ export async function getRunStatus(
   }
 }
 
-export async function getMessages(threadId: string): Promise<any[]> {
+export async function getMessages(
+  threadId: string,
+  runId?: string
+): Promise<any[]> {
   try {
+    const queryParams: Record<string, string> = {}
+    if (runId) {
+      // Note: The OpenAI API docs suggest 'run_id' but let's try 'runId' if that's what the backend expects.
+      // Using 'run_id' as it's more standard for OpenAI-compatible APIs.
+      queryParams.run_id = runId
+    }
     const response = (await callAzureAPI(
       "GET",
-      `/threads/${threadId}/messages`
+      `/threads/${threadId}/messages`,
+      undefined,
+      queryParams
     )) as { data: any[] }
     return response.data || []
   } catch (error) {
@@ -223,14 +234,17 @@ export async function pollRunCompletion(
   )
 }
 
-export function extractAssistantMessage(messages: any[]): string {
-  const assistantMessages = messages.filter((m) => m.role === "assistant")
-
-  if (assistantMessages.length === 0) {
+export function extractAssistantMessage(
+  messages: any[],
+  runId?: string
+): string {
+  // Find the first message from the assistant for the given run.
+  const assistantMessage = messages.find(
+    (m) => m.role === "assistant" && (runId ? m.run_id === runId : true)
+  )
+  if (!assistantMessage) {
     return "No response from agent"
   }
-
-  const latestMessage = assistantMessages[assistantMessages.length - 1]
-  const textContent = latestMessage.content.find((c: any) => c.type === "text")
+  const textContent = assistantMessage.content.find((c: any) => c.type === "text")
   return textContent?.text?.value || "No text content in response"
 }
