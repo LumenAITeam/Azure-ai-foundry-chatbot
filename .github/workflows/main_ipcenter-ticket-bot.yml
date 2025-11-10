@@ -52,4 +52,4 @@ jobs:
           app-name: 'ipcenter-ticket-bot'
           slot-name: 'Production'
           package: .
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_A0BFE83E7971422EAAE2CBDC39340C4F }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_8DA117A6BE514677B2C71724D5ADE041 }}
