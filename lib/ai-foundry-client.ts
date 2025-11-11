@@ -5,10 +5,6 @@ const API_VERSION = process.env.AZURE_API_VERSION || "2025-05-01"
 const AGENT_ID = process.env.AZURE_AGENT_ID
 const PROJECT_NAME = "IPCenter-Ticket-Bot"
 
-// if (!PROJECT_ENDPOINT || !AGENT_ID) {
-//   throw new Error("AZURE_PROJECT_ENDPOINT and AZURE_AGENT_ID required")
-// }
-
 // ✅ FIX 1: Add retry logic for network failures
 async function fetchWithRetry(
   url: string,
@@ -172,8 +168,6 @@ export async function getMessages(
   try {
     const queryParams: Record<string, string> = {}
     if (runId) {
-      // Note: The OpenAI API docs suggest 'run_id' but let's try 'runId' if that's what the backend expects.
-      // Using 'run_id' as it's more standard for OpenAI-compatible APIs.
       queryParams.run_id = runId
     }
     const response = (await callAzureAPI(
@@ -238,13 +232,42 @@ export function extractAssistantMessage(
   messages: any[],
   runId?: string
 ): string {
-  // Find the first message from the assistant for the given run.
-  const assistantMessage = messages.find(
-    (m) => m.role === "assistant" && (runId ? m.run_id === runId : true)
+  // ✅ FIX: Sort messages by created_at descending to get the latest first
+  const sortedMessages = [...messages].sort((a, b) => {
+    const timeA = typeof a.created_at === 'number' ? a.created_at : 0
+    const timeB = typeof b.created_at === 'number' ? b.created_at : 0
+    return timeB - timeA
+  })
+
+  console.log(
+    `[Extract] Total messages: ${messages.length}, Looking for runId: ${runId}`
   )
+
+  // Debug: log all assistant messages
+  sortedMessages.forEach((m, i) => {
+    if (m.role === "assistant") {
+      console.log(
+        `[Extract] Message ${i}: runId=${m.run_id}, created=${m.created_at}`
+      )
+    }
+  })
+
+  // ✅ FIX: Find the first (most recent) message from the assistant for the given run
+  const assistantMessage = sortedMessages.find(
+    (m) => m.role === "assistant" && (!runId || m.run_id === runId)
+  )
+
   if (!assistantMessage) {
+    console.warn(`[Extract] No assistant message found for runId: ${runId}`)
     return "No response from agent"
   }
+
   const textContent = assistantMessage.content.find((c: any) => c.type === "text")
-  return textContent?.text?.value || "No text content in response"
+  const result = textContent?.text?.value || "No text content in response"
+  
+  console.log(
+    `[Extract] ✅ Extracted message from runId ${runId}: ${result.substring(0, 100)}...`
+  )
+  
+  return result
 }

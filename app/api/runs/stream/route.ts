@@ -76,27 +76,33 @@ export async function POST(request: NextRequest) {
       throw new Error(`Polling timeout: ${error}`)
     }
 
-    // Step 4: Get messages
+    // ✅ FIX: Step 4: Get messages - PASS THE runId
     let messages: any[]
     try {
-      messages = await getMessages(sanitizedThreadId)
+      messages = await getMessages(sanitizedThreadId, runId)
       if (!Array.isArray(messages)) {
         throw new Error("Invalid messages format")
       }
-      console.log(`[${requestId}] Retrieved ${messages.length} messages`)
+      console.log(
+        `[${requestId}] Retrieved ${messages.length} messages for run ${runId}`
+      )
     } catch (err) {
       const error = err instanceof Error ? err.message : String(err)
       throw new Error(`Failed to get messages: ${error}`)
     }
 
-    // Step 5: Extract response
+    // ✅ FIX: Step 5: Extract response for this specific run
     let agentResponse: string
     try {
-      agentResponse = extractAssistantMessage(messages)
+      agentResponse = extractAssistantMessage(messages, runId)
       if (!agentResponse?.trim()) {
         agentResponse = "I encountered an issue processing your request. Please try again."
       }
+      console.log(
+        `[${requestId}] Extracted ${agentResponse.length} chars for run ${runId}`
+      )
     } catch (err) {
+      console.error(`[${requestId}] Extract error:`, err)
       agentResponse = "I encountered an issue processing your request. Please try again."
     }
 
