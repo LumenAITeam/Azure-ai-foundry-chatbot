@@ -9,7 +9,7 @@ const nextConfig = {
   reactStrictMode: true,
   compress: true,
   poweredByHeader: false,
-  output: 'standalone',
+  // output: 'standalone',
   
   async headers() {
     return [
