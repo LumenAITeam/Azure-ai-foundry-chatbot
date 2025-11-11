@@ -52,4 +52,4 @@ jobs:
           app-name: 'IP-Ticket-Assistant'
           slot-name: 'Production'
           package: .
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_06F905F54D314202B8991CC976925540 }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_6AD82E7A2C3B4D76838103B63F967ADD }}
