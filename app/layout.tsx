@@ -12,6 +12,9 @@ export const metadata: Metadata = {
   title: "Lumen Technologies - Enterprise Chat",
   description: "Enterprise support chat powered by AI",
   generator: "v0.app",
+  icons: {
+    icon: "https://apac.lumen.com/wp-content/uploads/2023/04/lumenfavicon.png",
+  },
 }
 
 export default function RootLayout({

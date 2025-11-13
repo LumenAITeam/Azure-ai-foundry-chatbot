@@ -8,11 +8,11 @@ import { useThread } from "@/hooks/use-thread"
 import { ThemeToggle } from "@/components/theme-toggle"
 import Image from "next/image"
 
-const QUICKPROMPTS = [
-  { label: "FAQ", text: "What common ticket issues can you help with?" },
-  { label: "View Status", text: "What is the current status of my tickets?" },
-  { label: "Get Help", text: "How do I submit a new ticket?" },
-]
+// const QUICKPROMPTS = [
+//   { label: "FAQ", text: "What common ticket issues can you help with?" },
+//   { label: "View Status", text: "What is the current status of my tickets?" },
+//   { label: "Get Help", text: "How do I submit a new ticket?" },
+// ]
 
 const MessageBubble = memo(({ message }: { message: any }) => {
   const isUser = message.role === "user"
@@ -107,11 +107,11 @@ export default function Chat() {
     await createNewThread()
   }, [clearError, clearMessages, createNewThread])
 
-  const handleQuickPrompt = (text: string) => {
-    setInputValue(text)
-    textareaRef.current?.focus()
-    updateActivity()
-  }
+  // const handleQuickPrompt = (text: string) => {
+  //   setInputValue(text)
+  //   textareaRef.current?.focus()
+  //   updateActivity()
+  // }
 
   return (
     <div className="chat-container">
@@ -190,28 +190,13 @@ export default function Chat() {
         )}
 
         <div className="composer-inner">
-          {threadId && messages.length > 0 && !isLoading && (
-            <div className="chips">
-              {QUICKPROMPTS.map((prompt) => (
-                <button
-                  key={prompt.label}
-                  onClick={() => handleQuickPrompt(prompt.text)}
-                  className="chip"
-                  aria-label={`Suggestion: ${prompt.label}`}
-                >
-                  {prompt.label}
-                </button>
-              ))}
-            </div>
-          )}
-
           <form onSubmit={handleSendMessage} className="composer-form">
             <textarea
               ref={textareaRef}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask any questions about ticket IP RADAR TICKET NUMBER..."
+              placeholder="Ask any questions about tickets using the IP Radar ticket number."
               disabled={isLoading || !threadId}
               rows={1}
               className="composer-textarea"
