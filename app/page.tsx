@@ -1,7 +1,7 @@
 import Chat from "@/app/components/chat"
 
 export const metadata = {
-  title: "Lumen Technologies - IPCenter Chatbot",
+  title: "Lumen Technologies - IPCenter Ticket Assistant",
   description: "AI-powered agent for IPCenter ticket management",
 }
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react"
 
-const IDLE_TIMEOUT = 10 * 60 * 1000 // 10 minutes
+const IDLE_TIMEOUT = 45 * 60 * 1000 // 45 minutes
 
 export function useThread() {
   const [threadId, setThreadId] = useState<string | null>(null)
