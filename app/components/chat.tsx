@@ -8,12 +8,6 @@ import { useThread } from "@/hooks/use-thread"
 import { ThemeToggle } from "@/components/theme-toggle"
 import Image from "next/image"
 
-// const QUICKPROMPTS = [
-//   { label: "FAQ", text: "What common ticket issues can you help with?" },
-//   { label: "View Status", text: "What is the current status of my tickets?" },
-//   { label: "Get Help", text: "How do I submit a new ticket?" },
-// ]
-
 const MessageBubble = memo(({ message }: { message: any }) => {
   const isUser = message.role === "user"
 
