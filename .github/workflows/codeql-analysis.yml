@@ -9,26 +9,32 @@ on:
     - cron: '0 3 * * *'   # nightly scan at 03:00 UTC
   workflow_dispatch:
 
+concurrency:
+  group: codeql-analysis
+  cancel-in-progress: true
+
 jobs:
   codeql:
     name: CodeQL analysis
     runs-on: ubuntu-latest
+
+    # Allow the action to read workflows and write check results / security events
     permissions:
       contents: read
       security-events: write
-
-    strategy:
-      matrix:
-        language: [ 'javascript', 'typescript' ]
+      actions: read
+      checks: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
+        uses: github/codeql-action/init@v3
         with:
-          languages: ${{ matrix.language }}
+          languages: javascript
           config-file: .github/codeql/codeql-config.yml
 
       - name: Set up Node.js
@@ -40,7 +46,7 @@ jobs:
         run: |
           if [ -f package-lock.json ]; then npm ci
           elif [ -f yarn.lock ]; then npm install
-          elif [ -f pnpm-lock.yaml ]; then npm ci
+          elif [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile
           else npm ci || true
           fi
 
@@ -48,4 +54,4 @@ jobs:
         run: npm run build --if-present
 
       - name: Run CodeQL analysis
-        uses: github/codeql-action/analyze@v2
+        uses: github/codeql-action/analyze@v3
