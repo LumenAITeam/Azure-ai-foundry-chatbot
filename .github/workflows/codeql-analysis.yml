@@ -45,7 +45,7 @@ jobs:
         run: |
           if [ -f package-lock.json ]; then npm ci
           elif [ -f yarn.lock ]; then npm install
-          elif [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile
+          elif [ -f pnpm-lock.yaml ]; then pnpm install --no-frozen-lockfile
           else npm ci || true
           fi
 
