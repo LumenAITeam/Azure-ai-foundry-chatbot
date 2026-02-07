@@ -30,14 +30,14 @@ jobs:
           fi
 
       - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@v4
+        uses: SonarSource/sonarqube-scan-action@v5.0.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         with:
           args: >
-            -Dsonar.projectKey=YOUR_PROJECT_KEY
-            -Dsonar.organization=YOUR_ORGANIZATION_KEY
+            -Dsonar.projectKey=INSERT_ACTUAL_PROJECT_KEY_HERE
+            -Dsonar.organization=INSERT_ACTUAL_ORG_KEY_HERE
             -Dsonar.sources=.
             -Dsonar.exclusions=**/node_modules/**,**/.next/**,**/out/**,**/.git/**
             -Dsonar.tests=.
