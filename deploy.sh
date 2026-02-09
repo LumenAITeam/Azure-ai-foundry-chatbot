@@ -7,7 +7,7 @@ echo "npm version: $(npm --version)"
 
 # Install dependencies
 echo "Installing dependencies..."
-npm install
+npm install --ignore-scripts
 
 # Build the app
 echo "Building Next.js application..."
