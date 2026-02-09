@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
           console.warn(`[${requestId}] Retry ${attempts}/${maxRetries}: ${error}`)
           await sleep(1000 * attempts) // Exponential backoff: 1s, 2s, 3s
         } else {
-          throw new Error(`Failed to add message after ${maxRetries} attempts: ${error}`)
+          throw new TypeError(`Failed to add message after ${maxRetries} attempts: ${error}`)
         }
       }
     }
@@ -58,12 +58,12 @@ export async function POST(request: NextRequest) {
     try {
       runId = await createRun(sanitizedThreadId)
       if (!runId) {
-        throw new Error("No runId returned from createRun")
+        throw new TypeError("No runId returned from createRun")
       }
       console.log(`[${requestId}] Run created: ${runId}`)
     } catch (err) {
       const error = err instanceof Error ? err.message : String(err)
-      throw new Error(`Failed to create run: ${error}`)
+      throw new TypeError(`Failed to create run: ${error}`)
     }
 
     // Step 3: Poll with timeout
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
     } catch (err) {
       const error = err instanceof Error ? err.message : String(err)
       console.error(`[${requestId}] Poll error: ${error}`)
-      throw new Error(`Polling timeout: ${error}`)
+      throw new TypeError(`Polling timeout: ${error}`)
     }
 
     // ✅ FIX: Step 4: Get messages - PASS THE runId
@@ -81,14 +81,14 @@ export async function POST(request: NextRequest) {
     try {
       messages = await getMessages(sanitizedThreadId, runId)
       if (!Array.isArray(messages)) {
-        throw new Error("Invalid messages format")
+        throw new TypeError("Invalid messages format")
       }
       console.log(
         `[${requestId}] Retrieved ${messages.length} messages for run ${runId}`
       )
     } catch (err) {
       const error = err instanceof Error ? err.message : String(err)
-      throw new Error(`Failed to get messages: ${error}`)
+      throw new TypeError(`Failed to get messages: ${error}`)
     }
 
     // ✅ FIX: Step 5: Extract response for this specific run
