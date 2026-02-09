@@ -20,7 +20,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
-            -Dsonar.organization=lumenaiteam
+            -Dsonar.organization=LumenAITeam
             -Dsonar.projectKey=lumenaiteam
             -Dsonar.sources=.
             -Dsonar.exclusions=**/node_modules/**,**/.next/**,**/.swc/**,**/dist/**
