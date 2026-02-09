@@ -21,6 +21,6 @@ jobs:
         with:
           args: >
             -Dsonar.organization=lumenaiteam
-            -Dsonar.projectKey=lumenaiteam_Azure-ai-foundry-chatbot
+            -Dsonar.projectKey=LumenAITeam_Azure-ai-foundry-chatbot
             -Dsonar.sources=.
             -Dsonar.exclusions=**/node_modules/**,**/.next/**,**/.swc/**,**/dist/**
