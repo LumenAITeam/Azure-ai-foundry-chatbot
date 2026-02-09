@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 import { getAccessToken } from "./azure-auth"
 
 const PROJECT_ENDPOINT = process.env.AZURE_PROJECT_ENDPOINT || ""

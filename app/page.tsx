@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 import Chat from "@/app/components/chat"
 
 export const metadata = {

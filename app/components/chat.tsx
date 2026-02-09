@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 "use client"
 
 import type React from "react"

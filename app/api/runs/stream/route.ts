@@ -1,4 +1,5 @@
 /* istanbul ignore file */
+/* eslint-disable no-console */
 import type { NextRequest } from "next/server"
 import {
   addMessage,

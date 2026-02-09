@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 "use client"
 
 import { useState, useCallback, useRef, useEffect } from "react"

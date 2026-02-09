@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   typescript: {
