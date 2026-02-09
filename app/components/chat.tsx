@@ -159,7 +159,7 @@ export default function Chat() {
           <div className="message-group">
             <div className="bubble assistant">
               <div className="loading-indicator">
-                <span>Thinking</span>
+                <span>Fetching data</span>
                 <span className="loading-dots">...</span>
               </div>
             </div>
