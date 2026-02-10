@@ -1,5 +1,6 @@
 /* istanbul ignore file */
 /* eslint-disable no-console */
+import { randomUUID } from "node:crypto"
 import type { NextRequest } from "next/server"
 import {
   addMessage,
@@ -132,7 +133,7 @@ async function runConversationWorkflow(
 }
 
 export async function POST(request: NextRequest) {
-  const requestId = `req-${Date.now()}-${Math.random()}`
+  const requestId = `req-${Date.now()}-${randomUUID()}`
   const startTime = Date.now()
 
   try {

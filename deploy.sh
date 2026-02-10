@@ -14,7 +14,7 @@ echo "Building Next.js application..."
 npm run build
 
 # Copy built files to deployment directory
-if [ -n "$DEPLOYMENT_TARGET" ]; then
+if [[ -n "$DEPLOYMENT_TARGET" ]]; then
   echo "Copying files to deployment directory..."
   mkdir -p $DEPLOYMENT_TARGET
 
