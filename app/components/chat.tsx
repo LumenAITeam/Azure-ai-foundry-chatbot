@@ -9,6 +9,26 @@ import { useThread } from "@/hooks/use-thread"
 import { ThemeToggle } from "@/components/theme-toggle"
 import Image from "next/image"
 
+const markdownComponents = {
+  h1: ({ children }: any) => <h1 className="markdown-h1">{children}</h1>,
+  h2: ({ children }: any) => <h2 className="markdown-h2">{children}</h2>,
+  h3: ({ children }: any) => <h3 className="markdown-h3">{children}</h3>,
+  p: ({ children }: any) => <p className="markdown-p">{children}</p>,
+  strong: ({ children }: any) => <strong className="markdown-strong">{children}</strong>,
+  em: ({ children }: any) => <em className="markdown-em">{children}</em>,
+  ul: ({ children }: any) => <ul className="markdown-ul">{children}</ul>,
+  ol: ({ children }: any) => <ol className="markdown-ol">{children}</ol>,
+  li: ({ children }: any) => <li className="markdown-li">{children}</li>,
+  code: ({ children }: any) => <code className="markdown-code">{children}</code>,
+  pre: ({ children }: any) => <pre className="markdown-pre">{children}</pre>,
+  blockquote: ({ children }: any) => <blockquote className="markdown-blockquote">{children}</blockquote>,
+  a: ({ href, children }: any) => (
+    <a href={href} target="_blank" rel="noopener noreferrer" className="markdown-link">
+      {children}
+    </a>
+  ),
+}
+
 const MessageBubble = memo(({ message }: { message: any }) => {
   const isUser = message.role === "user"
 
@@ -20,25 +40,7 @@ const MessageBubble = memo(({ message }: { message: any }) => {
             <p>{message.content}</p>
           ) : (
             <ReactMarkdown
-              components={{
-                h1: ({ children }) => <h1 className="markdown-h1">{children}</h1>,
-                h2: ({ children }) => <h2 className="markdown-h2">{children}</h2>,
-                h3: ({ children }) => <h3 className="markdown-h3">{children}</h3>,
-                p: ({ children }) => <p className="markdown-p">{children}</p>,
-                strong: ({ children }) => <strong className="markdown-strong">{children}</strong>,
-                em: ({ children }) => <em className="markdown-em">{children}</em>,
-                ul: ({ children }) => <ul className="markdown-ul">{children}</ul>,
-                ol: ({ children }) => <ol className="markdown-ol">{children}</ol>,
-                li: ({ children }) => <li className="markdown-li">{children}</li>,
-                code: ({ children }) => <code className="markdown-code">{children}</code>,
-                pre: ({ children }) => <pre className="markdown-pre">{children}</pre>,
-                blockquote: ({ children }) => <blockquote className="markdown-blockquote">{children}</blockquote>,
-                a: ({ href, children }) => (
-                  <a href={href} target="_blank" rel="noopener noreferrer" className="markdown-link">
-                    {children}
-                  </a>
-                ),
-              }}
+              components={markdownComponents}
             >
               {message.content}
             </ReactMarkdown>
