@@ -4,8 +4,6 @@
 
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
-
 /* ============================================
    LIGHT MODE - DEFAULT
    ============================================ */
