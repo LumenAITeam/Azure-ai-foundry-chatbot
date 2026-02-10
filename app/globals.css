@@ -60,6 +60,8 @@ html.dark {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(251, 132, 41, 0.3) transparent;
   }
 
   body {
@@ -102,12 +104,6 @@ html.dark {
   ::-webkit-scrollbar-thumb:hover {
     background: rgba(251, 132, 41, 0.5);
   }
-
-  /* Firefox scrollbar */
-  * {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(251, 132, 41, 0.3) transparent;
-  }
 }
 
 /* ============================================
@@ -141,6 +137,7 @@ html.dark {
   top: 0;
   z-index: 100;
   gap: 8px;
+  color: #ffffff;
 }
 
 .header-inner {
@@ -672,7 +669,7 @@ html.dark .markdown-link {
 /* Secondary Button (New Chat) */
 .btn.secondary {
   background: rgba(255, 255, 255, 0.15);
-  color: #ffffff;
+  color: inherit;
   border: 1px solid rgba(255, 255, 255, 0.3);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -766,7 +763,7 @@ html.dark .markdown-link {
   padding: 8px 10px;
   cursor: pointer;
   transition: all 0.2s ease;
-  color: #ffffff;
+  color: inherit;
   min-width: 44px;
   min-height: 44px;
   display: flex;

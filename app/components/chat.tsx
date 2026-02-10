@@ -104,12 +104,6 @@ export default function Chat() {
     await createNewThread()
   }, [clearError, clearMessages, createNewThread])
 
-  // const handleQuickPrompt = (text: string) => {
-  //   setInputValue(text)
-  //   textareaRef.current?.focus()
-  //   updateActivity()
-  // }
-
   return (
     <div className="chat-container">
       <header className="header">
