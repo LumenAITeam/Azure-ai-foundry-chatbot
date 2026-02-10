@@ -205,7 +205,8 @@ export async function POST(request: NextRequest) {
             )
           } catch (e) {
             console.error(
-              `[${requestId}] Failed to send error to stream`
+              `[${requestId}] Failed to send error to stream`,
+              e
             )
           }
           controller.close()
