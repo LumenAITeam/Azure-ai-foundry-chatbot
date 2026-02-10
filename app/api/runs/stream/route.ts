@@ -16,6 +16,38 @@ async function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+function getErrorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err)
+}
+
+async function addMessageWithRetry(
+  threadId: string,
+  content: string,
+  requestId: string
+): Promise<string> {
+  let attempts = 0
+  const maxRetries = 3
+
+  while (attempts < maxRetries) {
+    try {
+      const messageId = await addMessage(threadId, content)
+      console.log(`[${requestId}] Message added: ${messageId}`)
+      return messageId
+    } catch (err) {
+      attempts++
+      const error = getErrorMessage(err)
+
+      if (attempts < maxRetries) {
+        console.warn(`[${requestId}] Retry ${attempts}/${maxRetries}: ${error}`)
+        await sleep(1000 * attempts) // Exponential backoff: 1s, 2s, 3s
+      } else {
+        throw new TypeError(`Failed to add message after ${maxRetries} attempts: ${error}`)
+      }
+    }
+  }
+  throw new Error("Unreachable")
+}
+
 function validateRequestBody(body: any, requestId: string) {
   const { threadId, content } = body
 
@@ -46,31 +78,7 @@ async function runConversationWorkflow(
   startTime: number
 ) {
   // Step 1: Add message with exponential backoff retry
-  let messageId: string | null = null
-  let attempts = 0
-  const maxRetries = 3
-
-  while (attempts < maxRetries && !messageId) {
-    try {
-      messageId = await addMessage(threadId, content)
-      console.log(`[${requestId}] Message added: ${messageId}`)
-      break
-    } catch (err) {
-      attempts++
-      const error = err instanceof Error ? err.message : String(err)
-
-      if (attempts < maxRetries) {
-        console.warn(
-          `[${requestId}] Retry ${attempts}/${maxRetries}: ${error}`
-        )
-        await sleep(1000 * attempts) // Exponential backoff: 1s, 2s, 3s
-      } else {
-        throw new TypeError(
-          `Failed to add message after ${maxRetries} attempts: ${error}`
-        )
-      }
-    }
-  }
+  await addMessageWithRetry(threadId, content, requestId)
 
   // Step 2: Create run
   let runId: string
@@ -81,8 +89,7 @@ async function runConversationWorkflow(
     }
     console.log(`[${requestId}] Run created: ${runId}`)
   } catch (err) {
-    const error = err instanceof Error ? err.message : String(err)
-    throw new TypeError(`Failed to create run: ${error}`)
+    throw new TypeError(`Failed to create run: ${getErrorMessage(err)}`)
   }
 
   // Step 3: Poll with timeout
@@ -92,7 +99,7 @@ async function runConversationWorkflow(
       `[${requestId}] Run completed after ${Date.now() - startTime}ms`
     )
   } catch (err) {
-    const error = err instanceof Error ? err.message : String(err)
+    const error = getErrorMessage(err)
     console.error(`[${requestId}] Poll error: ${error}`)
     throw new TypeError(`Polling timeout: ${error}`)
   }
@@ -108,8 +115,7 @@ async function runConversationWorkflow(
       `[${requestId}] Retrieved ${messages.length} messages for run ${runId}`
     )
   } catch (err) {
-    const error = err instanceof Error ? err.message : String(err)
-    throw new TypeError(`Failed to get messages: ${error}`)
+    throw new TypeError(`Failed to get messages: ${getErrorMessage(err)}`)
   }
 
   // Step 5: Extract response for this specific run
